@@ -1,0 +1,21 @@
+<div class="body" id="body">
+					<div class="content clear">
+						<div class="c-left" id="c-left" name="c-left">
+							{tag:Lamb_View_Tag_List sql="@$indexSql@" id="list" is_page='1' pagesize='@$pagesize@' page='@$page@' cache_callback='@$this->mCacheCallback@' cache_time='@$this->mCacheTime@' cache_type='@$this->mCacheType@'} {/tag:Lamb_View_Tag_List}
+							<!--分页-->
+							{tag:Lamb_View_Tag_Page listid='list'}
+							<div class="page clear">
+								<a href="@$firstPageUrlTemplate@" class="p-first-last">首页</a> {pageitem focus='<span class="p-cur-index">#page#</span>' nofocus='<a class="p-index" href="@$pageUrlTemplate@">#page#</a>'}
+								<a href="@$nextPageUrlTemplate@" class="p-prev-next">下一页</a>
+								<a href="@$lastPageUrlTemplate@" class="p-first-last">尾页</a>
+							</div>
+							{/tag:Lamb_View_Tag_Page}
+						</div>
+
+						<div class="c-right">
+							{layout r_list}
+						</div>
+					</div>
+					<!--foot-->
+					{layout foot}
+				</div>

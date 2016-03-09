@@ -1,0 +1,142 @@
+@charset "utf-8";
+
+/*
+ibw.cn Reset Stylesheet
+v2.4
+Author: Carter
+Last Updated: 2014-10-26
+*/
+
+body,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+dl,
+dd,
+ul,
+ol {
+	margin: 0;
+	padding: 0
+}
+
+em,
+i {
+	font-style: normal
+}
+
+li {
+	list-style: none
+}
+
+a,
+a:hover {
+	text-decoration: none
+}
+
+img {
+	border: 0
+}
+
+table {
+	border-collapse: collapse;
+	border-spacing: 0
+}
+
+label {
+	cursor: default
+}
+
+textarea {
+	resize: none
+}
+
+a,
+a:focus {
+	outline: none
+}
+
+.clearfix:after {
+	content: '\20';
+	display: block;
+	height: 0;
+	clear: both
+}
+
+.clearfix {
+	*zoom: 1
+}
+
+.clear {
+	display: block;
+	height: 0;
+	clear: both;
+	font-size: 0;
+	line-height: 0;
+	overflow: hidden
+}
+
+.fl {
+	float: left;
+	display: inline
+}
+
+.fr {
+	float: right;
+	display: inline
+}
+
+.fn {
+	float: none
+}
+
+.tl {
+	text-align: left
+}
+
+.tr {
+	text-align: right
+}
+
+.tc {
+	text-align: center
+}
+
+.hide {
+	display: none
+}
+
+.show {
+	display: block
+}
+
+.noBg {
+	background: none!important
+}
+
+.noBorder {
+	border: 0!important
+}
+
+.red {
+	color: red
+}
+
+.mb15 {
+	margin-bottom: 15px
+}
+
+body,
+button,
+input,
+select,
+textarea {
+	font: 12px/1.5 Tahoma, Arial, 'Hiragino Sans GB', 'microsoft yahei', \5b8b\4f53
+}
+
+body {
+	background: #e6e6e6;
+}

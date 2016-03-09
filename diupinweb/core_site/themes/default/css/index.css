@@ -1,0 +1,292 @@
+@import url(public.css);
+
+.c-left .l-article{
+	padding: 20px 50px  0 30px;
+}
+.a-con {
+	border-bottom: 1px dotted #ccc;
+}
+.a-con li{
+	margin-bottom: 10px;
+}
+.a-con .c-title{
+	width: 590px;
+	white-space : nowrap;
+	text-overflow : ellipsis;
+	overflow: hidden;
+}
+.a-con .c-title a{
+	color: #555;
+	letter-spacing: 1px;
+	-webkit-transition: color .2s;
+	-moz-transition: color .2s;
+	transition: color .2s;
+}
+.a-con .c-title a:hover{
+	color: #3cbfaf;
+}
+.c-info{
+	height: 20px;
+}
+
+.c-info span{
+	display: block;
+	float: left;
+}
+.c-info .date-ico{
+	width: 20px;
+	height: 15px;
+	background: url(../images/thetime.png) no-repeat;
+}
+.c-info .tag-ico{
+	width: 10px;
+	height: 15px;
+	background: url(../images/tag.png) no-repeat -3px 0;
+}
+.tag-list{
+	margin-left: 30px;
+}
+.tag-list a{
+	color: #667ebd;
+	margin-right: 10px;
+}
+.tag-list a:hover{
+	color: #ff6600;
+	text-decoration: underline;
+}
+
+.c-cover img{
+	width: 590px;
+	height: 200px;
+}
+
+.a-con .c-des{
+	color: #666666;
+	font-size:14px;
+	line-height: 25px;
+}
+.a-con .c-des a{
+	display: block;
+	text-align: right;
+	font-size: 12px;
+	color: #F08D4C;
+}
+.a-con .c-des a:hover{
+	color: #ff6600;
+}
+.c-others{
+	height: 30px;
+}
+.page{
+	padding: 20px;
+}
+.page a, .page span{
+	display: block;
+	height: 37px;
+	line-height: 37px;
+	float: left;
+	text-align: center;
+	margin-right: 10px;
+}
+
+.page span{
+	color: #FFFFFF;
+}
+.page a{
+	color: #666;
+	border: 1px solid #e1e2e3; 
+}
+.page a:hover{
+	border-color: #ff6600;
+}
+.p-cur-index{
+	background: #3cbfaf;
+}
+.p-first-last{
+	width: 50px;
+}
+.p-prev-next{
+	width: 65px;
+}
+.p-cur-index, .p-index{
+	width: 37px;
+}
+
+.QQ_zone, .renrenwang, .sina_weibo, .tx_weibo{
+	background: url(../images/share-logo.png) no-repeat;
+	display: block;
+	height: 16px;
+	width: 35%;
+	padding: 5px 0px 10px 25px;
+	float: left;
+	color: #666;
+}
+
+/*---------------deliver-----------------------*/
+.deliver-body .foot{
+	position: absolute;
+	width: 100%;
+	bottom: 0;
+}
+
+.bg{
+	background: #FFFFFF;
+	border-radius: 10px;
+}
+.c-deliver-konw, .c-deliver-konw div{
+	padding: 20px;
+}
+.c-deliver-konw h1{
+	text-align: center;
+	font-size: 18px;
+	font-weight: normal;
+}
+.c-deliver-konw p{
+	line-height: 25px;
+}
+.c-deliver-konw .terms{
+	background: #f5f5f5;
+	color: #333;
+}
+.go-deliver{
+	display: block;
+	width: 200px;
+	height: 45px;
+	background: #3CBFAF;
+	line-height: 45px;
+	text-align: center;
+	border-radius: 5px;
+	margin: 0 auto;
+	color: #FFFFFF;
+	margin-top: 30px;
+}
+.go-deliver:hover{
+	background: #37B3A3;
+}
+.c-d-f{
+	padding: 30px;
+}
+.c-d-f li{
+	margin-bottom: 20px;
+}
+.f_title input{
+	height: 40px;
+	width: 380px;
+	border: 1px solid #ccc;
+	border-radius: 5px;
+
+}
+.f_summary label{
+	display: block;
+	height: 100px;
+	line-height: 100px;
+	float: left;
+	margin-right:4px;
+	_margin-right:0px;
+}
+.f_summary textarea{
+	height: 100px;
+	width: 380px;
+	border: 1px solid #ccc;
+	border-radius: 5px;
+	overflow:auto;
+}
+/*---------------deliver end-----------------------*/
+
+/*diupin*/
+.diupin{
+	padding: 50px;
+}
+.diupin-left, .diupin-nav{
+	float: left;
+}
+.diupin-left{
+	width: 630px;
+	border-right: 1px solid #E9EAE8;
+}
+.diupin-left h1{
+	color: #666;
+	text-align: center;
+}
+.diupin-left .d{
+	height: 65px;
+	line-height: 65px;
+	font-size: 18px;
+}
+.diupin-left textarea{
+	height: 190px;
+	width: 500px;
+	border: 1px solid #ccc;
+	padding: 5px;
+}
+.d-f-sub{
+	display: block;
+	width: 100px;
+	height: 40px;
+	text-align: center;
+	line-height: 40px;
+	cursor: pointer;
+	border-radius: 5px;
+	background: #3399FF;
+	color: #fff;
+	margin-top: 20px;
+	font-size: 18px;
+	outline: none;
+}
+.d-f-sub:hover{
+	background: #0F7FEE;
+}
+.diupin-nav a{
+	display: block;
+	margin-left: 60px;
+	color: #666;
+	height: 45px;
+	line-height: 45px;
+
+}
+.diupin-nav a:hover{
+	text-decoration: underline;
+}
+.h-title{
+	height: 50px;
+	line-height: 50px;
+	color: #3cbfaf;
+}
+.a{
+	text-indent: 30px;
+	line-height: 24px;
+	width: 600px;
+}
+.f{
+	font-size: 14px !important;
+}
+
+@media screen and (-webkit-min-device-pixel-ratio:0) { 
+	
+}
+
+@-moz-document url-prefix() {
+	.c-share .s-ico{
+		margin-left: 18px;
+	}
+	.c-comm .c-ico{
+		margin-left: 18px;
+	}	
+} 
+
+/*---------------index-----------------------*/
+.s_item{
+	width:280px;
+	overflow:hidden;
+	display:block;
+	text-overflow:ellipsis;
+	white-space:nowrap;
+	cursor:pointer;
+
+}
+
+
+/*-----------search---------------*/
+.cur-tag{
+	background: #009966 !important;
+}
