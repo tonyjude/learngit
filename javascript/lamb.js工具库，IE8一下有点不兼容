@@ -1,0 +1,2021 @@
+var lamb = lamb || {};
+lamb.extend = lamb.extend || {};
+var D = document;
+
+//lamb.$ = function(id){return typeof(id) == 'object' ? id : document.getElementById(id)};
+/** 
+ * 定义框架命名空间
+ * 根据选择器获取dom对象
+ * eg: 
+ *	lamb('#id') 根据ID查询Dom对象
+ *	lamb('$name') 根据name查询dom对象，返回的是一个集合
+ * 	lamb('.class div')根据css选择器去查询对象，返回的可能是一个集合也可以是一个对象，主要取决于第三参数	
+ *
+ * @param string query
+ * @param string root 查询的范围，默认是document
+ * @param boolean one 是否只返回结果的第一个dom对象
+ * 如果为1个参数，则必须传query参数
+ * 如果为2个参数，当第二个为boolean，number类型时，则是query,one
+ *		当第二个为object类型时，则是query,root
+ * 如果为3个参数，则是query,root,one
+ * @return null | HTMLElement | DomList
+ */
+L = window.lamb = function()
+{
+	var doms, isAarray = false,
+		arg = Array.apply(null, arguments),
+		root = document, one = false;
+	
+	if (!arg.length) {
+		return ;
+	}
+	
+	query = arg[0];
+	
+	if (arg.length == 2) {
+		if (typeof arg[1] == 'boolean' || typeof arg[1] == 'number') {
+			one = arg[1];
+		} else if (typeof arg[1] == 'object'){
+			root = arg[1]
+		}
+	} else {
+		root = arg[1];
+		one = !!arg[2];
+	}
+	
+	root = root || document;
+	one = !!one;
+	
+	if ($F.isHTMLElement(query)) {//如果是dom对象，就直接赋值
+		doms = query;
+	}else if (query.indexOf('#') === 0 && !(/\s+/gi).test(query)) {//根据ID查询
+		doms = document.getElementById(query.substr(1));
+	} else if (query.indexOf('$') === 0) {//根据名字查询
+		doms = document.getElementsByName(query.substr(1));
+	} else if (query.indexOf('.') != 0 && !/\s+/.test(query)) {//根据tagname查询
+		doms = root.getElementsByTagName(query);		
+	} else {//根据selector查询
+		doms = root[one ? 'querySelector' : 'querySelectorAll'](query);
+	}
+
+	isArray = doms && $F.isArrayLike(doms);
+
+	if (one && isArray) {
+		doms = doms[0];
+		isArray = false;
+	}
+
+	if (isArray) {
+		$F.each(doms, function(dom, i){
+			$F.extend(dom, domExtendObject, true);
+		});
+		$F.extend(doms, domListExtendObject, true);
+	} else {
+		doms && ($F.extend(doms, domExtendObject, true));
+	}
+	
+	return doms;
+};
+
+
+var domExtendObject = 
+{
+	/**
+	 * 框架扩展dom对象标识
+	 */
+	__lamb_dom_flag__ : 1,
+	
+	/**
+	 * 根据query查询dom子元素
+	 *
+	 * @param string query
+	 * @param boolean once
+	 * @return HTMLElement | array
+	 */
+	$ : function(query, one)
+	{
+		return L(query, this, !!one);
+	},
+	
+	/**
+	 * 隐藏dom元素
+	 */
+	hide : function()
+	{
+		this.style.display = 'none';
+		return this;
+	},
+	
+	/**
+	 * 显示dom元素
+	 *
+	 * @param string val
+	 */
+	show : function(val /*='block'*/)
+	{
+		val = val || 'block';
+		this.style.display = val;
+		return this;
+	},
+	
+	/**
+	 * 判断dom元素是否被隐藏
+	 *
+	 * @return boolean
+	 */
+	isHide : function()
+	{
+		return this.getCssValue('display') == 'none';
+	},
+	
+	/**
+	 * 设置dom对象的innerHTML属性
+	 *
+	 * @param string text
+	 * @param boolean isAppend 是否追加
+	 */
+	html : function(text, isAppend/*=false*/)
+	{
+		if (!isAppend) {
+			this.innerHTML = text;
+		} else {
+			this.innerHTML += text;
+		}
+		return this;
+	},
+	
+	/**
+	 * 设置dom对象的style属性
+	 *
+	 * @param json css
+	 */
+	css : function(css)
+	{
+		var that = this;
+		$F.each(css, function(v, k){
+			that.style[k.replace(/([A-Z])/g, "-$1").toLowerCase()] = v;
+		});
+		return this;
+	},
+	
+	/**
+	 * 将dom元素追加到parent指定的子元素后面 0为最面前 -1为最后面
+	 *
+	 * @param HTMLElement parent [默认为document.body]
+	 * @param int | HTMLElement order 如果为int则将追加到parent指定的位置0为第一，1为第二，如果是HTMLElement则插入到其前面
+	 */
+	to : function(parent /*=document.body*/, order /*=-1*/)
+	{
+		domExtendInnerMethod_Append((parent || document.body), this, order);
+		return this;
+	},
+	
+	/**
+	 * 将指定的dom元素追到当前对象中 0为最前面 -1为最后面
+	 */
+	append : function(child, order /*=-1*/)
+	{
+		domExtendInnerMethod_Append(this, child, order);
+		return this;		
+	},
+	
+	/**
+	 * 为dom对象追加className
+	 *
+	 * @param string className
+	 * @return HTMLElement
+	 */
+	addClass : function(className)
+	{
+		if (!this.hasClass(className)) {
+			this.className = (this.className ? $F.trim(this.className) + ' ' : '') + className;
+		}
+		return this;	
+	},
+	
+	/**
+	 * 为dom对象移除className
+	 * @param string className
+	 * @return HTMLElement
+	 */
+	removeClass : function(className)
+	{
+		var c = this.className;
+		this.className = $F.trim($F.replaceEx(' ' + c + ' ', ' ' + className + ' ', ''));
+		return this;		
+	},
+	
+	/**
+	 * 判断dom对象是否含有指定的className
+	 * @param string className
+	 * @return boolean
+	 */
+	hasClass : function(className)
+	{
+		return (' ' + this.className + ' ').indexOf(' ' + className + ' ') > -1;
+	},
+	
+	/**
+	 * 获取dom对象的css某个属性值
+	 *
+	 * @param string cssPropertyName 要获取的属性值的名字
+	 * @return mixed | null
+	 */
+	getCssValue : function(cssPropertyName)
+	{
+		if (this.style[cssPropertyName]) {
+			return this.style[cssPropertyName];
+		} else {
+			if (this.currentStyle) {
+				return this.currentStyle[cssPropertyName];
+			} else {
+				if (D.defaultView && D.defaultView.getComputedStyle) {
+					//将驼峰写法转为以-分割的属性，如果backgroundColor将转换为background-color
+					cssPropertyName = cssPropertyName.replace(/([A-Z])/g, "-$1").toLowerCase();
+					var d = D.defaultView.getComputedStyle(this, "");
+					return d && d.getPropertyValue(cssPropertyName);
+				} else {
+					return null;
+				}
+			}
+		}		
+	},
+	
+	/**
+	 * 获取dom对象相对于页面的位置
+	 * @return RectObject
+	 */
+	getPageRect : function()
+	{
+		var left = 0,
+			top = 0,
+			right = 0,
+			bottom = 0;
+		if (!this.getBoundingClientRect) {
+			var n = this;
+			while (n) {
+				left += n.offsetLeft,
+				top += n.offsetTop;
+				n = n.offsetParent;
+			}
+			right = left + this.offsetWidth;
+			bottom = top + this.offsetHeight;
+		} else {
+			var rect = this.getBoundingClientRect();
+			left = right = $D.getScrollLeft();
+			top = bottom = $D.getScrollTop();
+			left += rect.left;
+			right += rect.right;
+			top += rect.top;
+			bottom += rect.bottom;
+		}
+		return {
+			"left": left,
+			"top": top,
+			"right": right,
+			"bottom": bottom
+		};		
+	},
+	
+	/**
+	 * 获取dom对象相当于可视区域的位置
+	 */
+	getClientRect : function()
+	{
+		var rect = this.pageRect(),
+			sLeft = $D.getScrollLeft(),
+			sTop  = $D.getScrollTop();
+		rect.left -= sLeft;
+		rect.right -= sLeft;
+		rect.top -= sTop;
+		rect.bottom -= sTop;
+		return rect;	
+	},
+	
+	/**
+	 * dom对象addEventListener的代理，目的是利用返回值，完成链式
+	 *
+	 * @param string | array eventName 如果是数组，则会同时绑定数组所有的事件
+	 * @param function callback
+	 * @param boolean level
+	 */
+	on : function(eventName, callback, level /*=false*/)
+	{
+		level = !!level;
+		if (!$F.isArray(eventName)) {
+			eventName = [eventName];
+		}
+		
+		for (var i = 0, j = eventName.length; i <j; i++) {
+			this.proxy('addEventListener', [eventName[i], callback, level]);
+		}
+		return this;
+	},
+	
+	/**
+	 * dom对象removeEventListener的代理，目的是利用返回值，完成链式操作
+	 *
+	 * @param string | array eventName 如果是数组，则会同时移除数组所有的事件
+	 * @param function callback
+	 * @param boolean level	 
+	 */
+	removeEvent : function(eventName, callback, level /*=false*/)
+	{
+		level = !!level;
+		if (!$F.isArray(eventName)) {
+			eventName = [eventName];
+		}
+		
+		for (var i = 0, j = eventName.length; i <j; i++) {		
+			this.proxy('removeEventListener', [eventName[i], callback, level]);
+		}
+		return this;
+	},
+	
+	/**
+	 * 为dom对象绑定一次性事件，即触发一次就移除
+	 */
+	once : function(eventName, callback, level /*=false*/)
+	{
+		var that = this;
+		level = !!level;
+		this.addEventListener(eventName, function(event){
+			callback(event);
+			that.removeEventListener(eventName, arguments.callee, level);
+		}, level);
+		return this;
+	},
+	
+	/**
+	 * 触发指定的事件
+	 */
+	fire : function(eventname)
+	{
+		var evt = document.createEvent('HTMLEvents');
+		evt.initEvent(eventname, true, true);
+		this.dispatchEvent(evt);		
+		return this;
+	},
+	
+	/**
+	 * 获取dom对象的子元素，剔除#text对象
+	 */
+	childs : function()
+	{
+		var nodes	=	[];
+		$F.each(this.childNodes, function(ele){
+			if (ele.nodeName != '#text') {
+				nodes.push(L(ele));	
+			}
+		});
+		return nodes;		
+	},
+
+	/**
+	 * dom对象所有方法的代理，目的是利用返回值，完成链式
+	 * @param string method 要代理的方法名
+	 * @param array params 传的参数
+	 * @param object ret 函数返回指的引用，当有返回值时，会修改该ret属性的值
+	 */	
+	proxy : function(method, params, ret)
+	{
+		var params = params || [],
+			ret = ret || {};
+		
+		if (!this[method] || !$F.isFunction(this[method])) {
+			throw new Error('对象中无法找到名为：' + method + '的方法');
+			return null;
+		}
+		
+		ret.ret = this[method].apply(this, params);
+		return this;
+	}
+};
+
+/**
+ * 所有的HTMLElement集合都将追加的方法
+ */
+var domListExtendObject = 
+{
+	each : function(callback)
+	{
+		$F.each(this, callback, this);
+		return this;
+	},
+	
+	/** 
+	 * 将集合转换为数组
+	 */
+	toArray : function()
+	{
+		return Array.apply(null, this);
+	},
+	
+	/**
+	 * 使用数组循环
+	 */
+	arrayEach : function(callback)
+	{
+		$F.each(this.toArray(), callback, this);
+		return this;
+	}
+};
+
+/**
+ *	@class lamb.utils工具类
+ **/
+(function(){
+	lamb.utils = {};
+	var bridge = new (function(){});
+	var utils = lamb.utils = {
+		/**
+		 * 判断val是否在数组arr中
+		 * @param {array} arr
+		 * @param {mix} val
+		 * @param {boolean} bStrict = false
+		 * @return {boolean}
+		 */
+		inArray : function(arr, val, bStrict/*=false*/)
+		{
+			bStrict = !!bStrict;
+			if (bStrict) {
+				for (var i = 0, j = arr.length; i < j; i++) {
+					if (arr[i] === val){ return true; }
+				}
+			}
+			else {
+				for (var i = 0, j = arr.length; i < j; i++) {
+					if (arr[i] == val){ return true;}
+				}
+			}
+			return false;
+		},
+		
+		/**
+		 * 移除数组arr中索引index的项
+		 * @param {array} arr
+		 * @param {int} index
+		 */
+		removeItem : function(arr, index)
+		{
+			arr.splice(Math.max(0, Math.min(arr.length-1, index)), 1);
+			return this;
+		},
+		
+		/**
+		 * 在数组arr指定索引后面插入data
+		 * @param {array} arr
+		 * @param {int} index
+		 * @param {mixed} data
+		 */
+		arrayInsertAfter : function(arr, index, data)
+		{
+			if (this.isInt(index, true) && arr.length > index) {
+				if (arr.length -1 == index) {
+					arr.push(data);
+				} else {
+					this.arrayInsertBefore(arr, index + 1, data);
+				}
+			}
+			return this;
+		},
+		
+		/**
+		 * 在数组arr指定索引后面前面data
+		 * @param {array} arr
+		 * @param {int} index
+		 * @param {mixed} data
+		 */
+		arrayInsertBefore : function(arr, index, data)
+		{
+			if (this.isInt(index, true) && arr.length > index) {
+				arr.splice(index, 0, data);
+			} else if (arr.length <= index) {
+				arr.push(data);
+			}
+			return this;			
+		},
+		
+		/**
+		 * 修改数组中某个成员的索引
+		 * @param array arr
+		 * @param int oldIndex
+		 * @param int newIndex
+		 * @return lamb
+		 */
+		arrayChangeOrder : function(arr, oldIndex, newIndex)
+		{
+			var temp = arr[oldIndex];
+			this.removeItem(arr, oldIndex);
+			this.arrayInsertBefore(arr, newIndex, temp);
+			return this;
+		},
+		
+		/**
+		 * 获取字符串str字节长度
+		 * @param {string} str
+		 * @return {int}
+		 */
+		getByteLen : function(str)
+		{
+			return (str + '').replace(/[^\x00-\xff]/gi,'11').length;
+		},
+		
+		isEmpty : function(str)
+		{
+			return (str + '').length <= 0;
+		},
+		
+		isArray : function(array)
+		{
+			return array && array.constructor === Array;
+		},
+		
+		/**
+		 * 判断obj是否为function类型
+		 * @param mixed obj
+		 * @return boolean
+		 */
+		isFunction : function(obj)
+		{
+			return this.type(obj) == '[object Function]';
+		},
+		/**
+		 * 为正则表达式字符串str转义
+		 * @param {string} str
+		 * @param {string} delimiter
+		 * @return {string}
+		 */
+		regexpQuote : function(str, delimiter/*=''*/)
+		{
+			return (str + '').replace(new RegExp('[.\\\\+*?\\[\\^\\]$(){}=!<>|:\\' + (delimiter || '') + '-]', 'g'), '\\$&');
+		},
+		
+		/**
+		 * 修剪字符串str两端空格
+		 * @param {string} str
+		 * @return {string}
+		 */
+		trim : function(str)
+		{
+			return (str + '').replace(/(^\s*)|(\s*$)/gi, '');
+		},
+		
+		/**
+		 * 扩展replace方法，在字符串str查找search，并替换所有
+		 * @param {string} str
+		 * @param {string} search
+		 * @param {string} replaceMent
+		 * @param {boolean} bIgnore是否区分大小写默认false
+		 * @return {string}
+		 */
+		replaceEx : function(str, search, replaceMent, bIgnore/*=false*/)
+		{
+			return (str + '').replace(new RegExp(utils.regexpQuote(search), bIgnore ? 'g' : 'gi'), replaceMent);
+		},
+		
+		/**
+		 * 判断是否为整数或者正负整数
+		 * @param {number} num
+		 * @param {boolean} bPostive是否区分正负默认为false
+		 * @return {number}
+		 */
+		isInt : function(num, bPostive/*=false*/)
+		{
+			return (bPostive ? (/^\d+$/gi) : (/^-?\d+$/gi)).test(num + '');
+		},
+		
+		/**
+		 * 判断是否为数字或者正负实数
+		 * @param {number} num
+		 * @param {boolean} bPostive是否区分正负默认为false
+		 * @return {number}
+		 */
+		isNumber : function (num, bPostive/*=false*/)
+		{
+			return (bPostive ? (/^((\d+\.\d+)|(\d+))$/gi) : (/^-?((\d+\.\d+)|(\d+))$/gi)).test(num + '');
+		},
+		
+		/**
+		 * 判断str是否以http://开头
+		 * @param {string} str
+		 * @return boolean
+		 */
+		isHttp : function(str)
+		{
+			str = str + '';
+			return !this.isEmpty(str) && str.substr(0, 7).toLowerCase() == 'http://';
+		},
+
+		/**
+		 * 判断str是否email格式
+
+
+		 * @param {string} str
+		 * @return boolean
+		 */
+		isEmail : function(str)
+		{
+			str = str + '';
+			return (/^[\w]+@[\w]+(?:\.[a-zA-Z]+)+$/gi).test(str);
+		},
+		
+		/**
+		 * 判断对象obj是否像array一样可以遍历
+		 * @param mixed obj
+		 * @return boolean
+		 */
+		isArrayLike : function(obj)
+		{
+			var length = obj.length,
+				type = this.type(obj);
+			
+			//如果是可枚举的dom元素	
+			if (obj.nodeType && length) {
+				return true;
+			}
+			
+			return length === 0 || (typeof length === 'number' && length > 0 && (length - 1) in obj);
+		},
+		
+		/**
+		 * 判断是否为HTMLElement类型，也就是dom对象
+		 *
+		 * @param mixed dom
+		 * @return boolean
+		 */
+		isHTMLElement : function(dom)
+		{
+			return /^\[object HTML.+?\]$/gi.test(this.type(dom));
+		},
+		
+		/**
+		 * 获取对象obj的类型名
+		 * @param mixed obj
+		 * @return string
+		 */
+		type : function(obj)
+		{
+			return Object.prototype.toString.call(obj);
+		},
+		
+		/**
+		 * 遍历集合coll,并逐步调用函数fn
+		 * @param {Object} coll
+		 * @param {function} fn
+		 */
+		each : function(coll, fn, caller)
+		{
+			caller = caller || null;
+			
+			if (this.isArrayLike(coll)) {
+				for (var i = 0, j = coll.length; i < j; i++) {
+					if (fn.call(caller, coll[i], i, coll) === false) {break;}
+				}
+			} else {
+				for (var k in coll) {
+					if (fn.call(caller ,coll[k], k, coll) === false) {break;}
+				}
+			}
+		},	
+		
+		/**
+		 * 过滤集合coll的成员 如果回调函数fn返回为真则保留
+		 * @param array | object coll
+		 * @param function fn
+		 * @param object obj
+		 * @return array
+		 */
+		filter : function(coll, fn, obj)
+		{
+			var ret = [];
+			obj = obj || null;
+			this.each(coll, function(){
+				fn.apply(obj, arguments) && ret.push(arguments[0]);
+			});
+			return ret;
+		},
+		
+		/**
+		 * 遍历coll，执行fn，将fn返回结果放入新的结果数组中
+		 * @param object | array coll
+		 * @param function fn
+		 * @param object obj		 
+		 * @return array
+		 */
+		map : function(coll, fn, obj)
+		{
+			var ret = [];
+			this.each(coll, function(){
+				ret.push(fn.apply(obj, arguments));
+			});
+			return ret;
+		},
+		
+		/**
+		 * 修改函数f的this为对象o，既为对象o绑定函数f
+		 * @param {object} o
+		 * @param {function} f
+		 * @param .... 可选，为函数f指定参数，eg: bind(o, f, 1, 2) => f(1, 2)
+		 * @return {function} 
+		 */
+		bind : function (o, f)
+		{
+			var args	=	Array.prototype.slice(arguments,2);
+			return function()
+			{
+				f.apply(o,args.concat(Array.apply(null,arguments)));
+			}			
+		},
+		
+		/**
+		 * 生成事件回调函数，并绑定对象o为函数执行者，传递event对参数
+		 */
+		bindAsEventListener : function (o, f)
+		{
+			var args	=	Array.prototype.slice(arguments,2);
+			return function(event)
+			{
+				f.apply(o,args.concat([event]));
+			}			
+		},
+		
+		/**
+		 * 创建类函数
+		 * @param {object} _class
+		 */
+		$Class : function(_class)
+		{
+			var _fBridge = function(){this.initialize.apply(this, arguments)};
+			_fBridge.prototype = _class;
+			return _fBridge;
+		},
+		
+		/**
+		 * 将sourceClass对象的属性复制到targetClass中
+		 * @param {object} targetClass
+		 * @param {object} sourceClass
+		 * @param {boolean} bReserveOwnProperty是否保留targetClass原有的属性 默认为false
+		 * @return {object} targetClass
+		 */
+		extend : function(targetClass, sourceClass, bReserveOwnProperty/*=false*/)
+		{
+			if (bReserveOwnProperty) {
+				for (var s in sourceClass) {
+					if (!targetClass.hasOwnProperty(s)) {
+						targetClass[s] = sourceClass[s];
+					}
+				}
+			}
+			else {
+				for (var s in sourceClass) {
+					targetClass[s] = sourceClass[s];
+				}
+			}
+		},
+		
+		/**
+		 * 以obj为原型创建实例
+		 * @param {object} obj
+		 */
+		makeInstance : function(obj)
+		{
+			bridge.prototype = obj;
+			obj = new bridge;
+			bridge.prototype = null;
+			return obj;
+		},
+		
+		/**
+		 * subClass继承superClass
+		 * @param {object} subClass
+		 * @param {object} superClass
+		 * @return {object}扩展后的新对象
+		 */
+		inherits : function(subClass, superClass)
+		{
+			var oldPrototype = subClass.prototype,
+				newPrototype = utils.makeInstance(superClass.prototype);
+			utils.extend(newPrototype, oldPrototype, true);
+			subClass.prototype = newPrototype;
+			return (newPrototype.constructor = subClass);
+		},
+		
+		/**
+		 * 改进setTimeout闭包中的this所有者
+		 *
+		 * @param function f
+		 * @param int t
+		 * @param object o
+		 * @return timerid
+		 */
+		setTimeout : function(f, t, o)
+		{
+			return setTimeout(utils.bind(o, f), t);
+		},
+		
+		/**
+		 * 解析完整的URL，解析后的结果包含
+		 * scheme - 协议 hostname - 主机名不包括端口号 host - 主机名包括端口号
+		 * port - 端口号 pathname - 路径名 search - 查询字符串 query - 包括解析search的查询参数对象
+		 *
+		 * @param strign url
+		 * @param boolean isParseQuery = false
+		 * @return object
+		 */
+		parseUrl : function(url, isParseQuery/*= false*/)
+		{
+			var ret = {}, pos,
+				host, port, search = '';
+			isParseQuery = !!isParseQuery;
+			if ((pos = url.indexOf('://')) > 0) {
+				ret.scheme = url.substr(0, pos).toLowerCase();
+				url = url.substr(pos + 3);
+				
+				if (url.length > 0) {
+					host = (pos = url.indexOf('/')) < 0 ? url : url.substr(0, pos);
+					url =  pos < 0 ? '' : url.substr(pos);
+					ret.host = host;
+					
+					if ((pos = host.lastIndexOf(':')) > 0) {
+						ret.hostname = host.substr(0, pos);
+						if (lamb.utils.isInt(port = host.substr(pos + 1))) {
+							ret.port = port;
+						}
+					} else {
+						ret.hostname = host;
+						ret.port = 80;
+					}
+					
+					if (url.length > 0) {
+						if ((pos = url.indexOf('?')) >= 0) {
+							ret.pathname = url.substr(0, pos);
+							search = url.substr(pos + 1);
+						} else {
+							ret.pathname = url;
+						}
+						
+						ret.search = search;
+						
+						if (search.length > 0 && isParseQuery) {
+							ret.query = lamb.utils.parseStr(search);
+						}
+					}
+				}
+			}
+			return ret;
+		},
+		
+		/**
+		 * 解析查询字符串返回字典map 
+		 *
+		 * @param string query
+		 * @return object
+		 */
+		parseStr : function(query /*=location.search*/)
+		{
+			query = query || location.search;
+			var ret = {}, pos;
+			
+			if (query.substr(0, 1) == '?') {
+				query = query.substr(1);	
+			}
+			query = query.split('&');
+			for (var i = 0; i < query.length; i ++) {
+				var temp = query[i];
+				if ((pos = query[i].indexOf('=')) < 0) {
+					continue ;
+				}
+				ret[temp.substr(0, pos)] = temp.substr(pos + 1);
+			}
+			return ret;
+		},
+		
+		/**
+		 * 以尽量最短的时间异步执行闭包f，t为间隔执行时间默认为0毫秒
+		 *
+		 * @param function f
+		 * @param int t
+		 * @return this
+		 */
+		asyncRun : function(f, t)
+		{
+			setTimeout(f, t || 0);
+		}
+	};
+})();
+
+/**
+ * @class lamb.cookie
+ */
+lamb.cookie = 
+{
+		set:function(sName,sValue,iExpireSecond,sDomain,sPath)
+		{
+			sDomain=sDomain||'';
+			sPath=sPath||'/';
+			var sCookie='';
+			sCookie=sName+'='+sValue;//escape(sValue);
+			if(!isNaN(iExpireSecond))
+			{
+				var date=new Date();
+				date.setTime(date.getTime()+iExpireSecond*1000);
+				sCookie+=';expires='+date.toGMTString();
+			}
+			if(!lamb.utils.isEmpty(sDomain)) {sCookie+=';domain='+sDomain};
+			if(!lamb.utils.isEmpty(sPath)) {sCookie+=';path=/'};
+			document.cookie=sCookie;
+		},
+		get:function(sName)
+		{
+			var sCookie=document.cookie;
+			var re=new RegExp('^'+sName+'\=','g');
+			if(lamb.utils.isEmpty(sCookie)){ return ''};
+			var aCookie=sCookie.split(';');
+			for(var i=0;i<aCookie.length;i++)
+			{
+				var s = lamb.utils.trim(aCookie[i]);
+				if(re.test(s)) return s.split('=')[1];
+			}
+			return '';
+		}
+};
+
+/**
+ *	@class lamb.browser
+ */
+(function(){
+    var agent = navigator.userAgent.toLowerCase(),
+        opera = window.opera,
+        browser = {
+        /**
+         * 检测浏览器是否为IE
+         * @name lamb.browser.ie
+         * @property    检测浏览器是否为IE
+         * @grammar     lamb.browser.ie
+         * @return     {Boolean}    返回是否为ie浏览器
+         */
+        ie		: !!window.ActiveXObject,
+
+        /**
+         * 检测浏览器是否为Opera
+         * @name lamb.browser.opera
+         * @property    检测浏览器是否为Opera
+         * @grammar     lamb.browser.opera
+         * @return     {Boolean}    返回是否为opera浏览器
+         */
+        opera	: ( !!opera && opera.version ),
+
+        /**
+         * 检测浏览器是否为WebKit内核
+         * @name lamb.browser.webkit
+         * @property    检测浏览器是否为WebKit内核
+         * @grammar     lamb.browser.webkit
+         * @return     {Boolean}    返回是否为WebKit内核
+         */
+        webkit	: ( agent.indexOf( ' applewebkit/' ) > -1 ),
+
+        /**
+         * 检测是否为Adobe AIR
+         * @name lamb.browser.air
+         * @property    检测是否为Adobe AIR
+         * @grammar     lamb.browser.air
+         * @return     {Boolean}    返回是否为Adobe AIR
+         */
+        air		: ( agent.indexOf( ' adobeair/' ) > -1 ),
+
+        /**
+         * 检查是否为Macintosh系统
+         * @name lamb.browser.mac
+         * @property    检查是否为Macintosh系统
+         * @grammar     lamb.browser.mac
+         * @return     {Boolean}    返回是否为Macintosh系统
+         */
+        mac	: ( agent.indexOf( 'macintosh' ) > -1 ),
+
+        /**
+         * 检查浏览器是否为quirks模式
+         * @name lamb.browser.quirks
+         * @property    检查浏览器是否为quirks模式
+         * @grammar     lamb.browser.quirks
+         * @return     {Boolean}    返回是否为quirks模式
+         */
+        quirks : ( document.compatMode == 'BackCompat' )
+    };
+
+    /**
+     * 检测浏览器是否为Gecko内核，如Firefox
+     * @name lamb.browser.gecko
+     * @property    检测浏览器是否为Gecko内核
+     * @grammar     lamb.browser.gecko
+     * @return     {Boolean}    返回是否为Gecko内核
+     */
+    browser.gecko = ( navigator.product == 'Gecko' && !browser.webkit && !browser.opera );
+
+    var version = 0;
+
+    // Internet Explorer 6.0+
+    if ( browser.ie )
+    {
+        version = parseFloat( agent.match( /msie (\d+)/ )[1] );
+		if (agent.indexOf('boie9') > 0) {
+			version = 9;
+		}
+        /**
+         * 检测浏览器是否为 IE8 浏览器
+         * @name lamb.browser.IE8
+         * @property    检测浏览器是否为 IE8 浏览器
+         * @grammar     lamb.browser.IE8
+         * @return     {Boolean}    返回是否为 IE8 浏览器
+         */
+        browser.ie8 = !!document.documentMode;
+
+        /**
+         * 检测浏览器是否为 IE8 模式
+         * @name lamb.browser.ie8Compat
+         * @property    检测浏览器是否为 IE8 模式
+         * @grammar     lamb.browser.ie8Compat
+         * @return     {Boolean}    返回是否为 IE8 模式
+         */
+        browser.ie8Compat = document.documentMode == 8;
+
+        /**
+         * 检测浏览器是否运行在 兼容IE7模式
+         * @name lamb.browser.ie7Compat
+         * @property    检测浏览器是否为兼容IE7模式
+         * @grammar     lamb.browser.ie7Compat
+         * @return     {Boolean}    返回是否为兼容IE7模式
+         */
+        browser.ie7Compat = ( ( version == 7 && !document.documentMode )
+                || document.documentMode == 7 );
+
+        /**
+         * 检测浏览器是否IE6模式或怪异模式
+         * @name lamb.browser.ie6Compat
+         * @property    检测浏览器是否IE6 模式或怪异模式
+         * @grammar     lamb.browser.ie6Compat
+         * @return     {Boolean}    返回是否为IE6 模式或怪异模式
+         */
+        browser.ie6Compat = ( version < 7 || browser.quirks );
+
+    }
+
+    // Gecko.
+    if ( browser.gecko )
+    {
+        var geckoRelease = agent.match( /rv:([\d\.]+)/ );
+        if ( geckoRelease )
+        {
+            geckoRelease = geckoRelease[1].split( '.' );
+            version = geckoRelease[0] * 10000 + ( geckoRelease[1] || 0 ) * 100 + ( geckoRelease[2] || 0 ) * 1;
+        }
+    }
+    /**
+     * 检测浏览器是否为chrome
+     * @name lamb.browser.chrome
+     * @property    检测浏览器是否为chrome
+     * @grammar    	lamb.browser.chrome
+     * @return     {Boolean}    返回是否为chrome浏览器
+     */
+    if (/chrome\/(\d+\.\d)/i.test(agent)) {
+        browser.chrome = + RegExp['\x241'];
+    }
+    /**
+     * 检测浏览器是否为safari
+     * @name lamb.browser.safari
+     * @property    检测浏览器是否为safari
+     * @grammar     lamb.browser.safari
+     * @return     {Boolean}    返回是否为safari浏览器
+     */
+    if(/(\d+\.\d)?(?:\.\d)?\s+safari\/?(\d+\.\d+)?/i.test(agent) && !/chrome/i.test(agent)){
+    	browser.safari = + (RegExp['\x241'] || RegExp['\x242']);
+    }
+
+
+    // Opera 9.50+
+    if ( browser.opera )
+        version = parseFloat( opera.version() );
+
+    // WebKit 522+ (Safari 3+)
+    if ( browser.webkit )
+        version = parseFloat( agent.match( / applewebkit\/(\d+)/ )[1] );
+
+    /**
+     * 浏览器版本
+     *
+     * gecko内核浏览器的版本会转换成这样(如 1.9.0.2 -> 10900).
+     *
+     * webkit内核浏览器版本号使用其build号 (如 522).
+     * @name lamb.browser.version
+     * @grammar     lamb.browser.version
+     * @return     {Boolean}    返回浏览器版本号
+     * @example
+     * if ( lamb.browser.ie && <b>lamb.browser.version</b> <= 6 )
+     *     alert( "Ouch!" );
+     */
+    browser.version = version;
+
+    /**
+     * 是否是兼容模式的浏览器
+     * @name lamb.browser.isCompatible
+     * @grammar     lamb.browser.isCompatible
+     * @return     {Boolean}    返回是否是兼容模式的浏览器
+     * @example
+     * if ( lamb.browser.isCompatible )
+     *     alert( "Your browser is pretty cool!" );
+     */
+    browser.isCompatible =
+        !browser.mobile && (
+        ( browser.ie && version >= 6 ) ||
+        ( browser.gecko && version >= 10801 ) ||
+        ( browser.opera && version >= 9.5 ) ||
+        ( browser.air && version >= 1 ) ||
+        ( browser.webkit && version >= 522 ) ||
+        false );
+    browser.ie_version = browser.ie ? browser.version : '';
+	browser.ie6 = false;
+    lamb.browser = browser;
+    if(browser.ie && browser.version == 6) 
+    {
+		browser.ie6 = true;
+    	try {
+    		document.execCommand("BackgroundImageCache", false, true);
+    	} catch(e) {}
+    } 
+})();
+
+/**
+ * @class lamb.event 
+ */
+(function(){
+	var addEvent,removeEvent,
+		addIframeEvent, removeIframeEvent, _id=1;
+	var oEvent=function(event)
+	{
+		//return event;
+		event.pageX = event.clientX + lamb.dom.getScrollLeft();
+		event.pageY = event.clientY + lamb.dom.getScrollTop();
+		event.target = event.srcElement;
+		event.stopPropagation = oEvent.stopPropagation;
+		event.preventDefault = oEvent.preventDefault;
+		if (event.type == "mouseout") {
+			event.relatedTarget = event.toElement
+		} else if (event.type == "mouseover") {
+			event.relatedTarget = event.fromElement
+		}
+		return event;
+	};
+	
+	oEvent.stopPropagation	=	function(){this.returnValue=false;};
+	oEvent.preventDefault	=	function(){this.cancelBubble=true};
+	
+	if(lamb.browser.ie)
+	{
+		addEvent=function(oElement,sType,fHandler)
+		{
+			var sOnType='on'+sType;
+			if (!oElement) {
+				return false;
+			}
+			if(!fHandler.id) fHandler.id=_id++;
+			if(!oElement.events)oElement.events={};
+			var oHandler=oElement.events[sType];
+			if(!oHandler)
+			{
+				oHandler=oElement.events[sType]={};
+				if(oElement[sOnType]) oHandler[0]=oElement[sOnType];
+			}
+			oHandler[fHandler.id]=fHandler;
+			oElement[sOnType]=handleEvent;
+			return this;
+		};
+		
+		removeEvent=function(oElement,sType,fHandler)
+		{
+			try{
+				if(oElement.events[sType]&&fHandler.id&&oElement.events[sType][fHandler.id]) {
+				delete oElement.events[sType][fHandler.id];
+				}
+			}
+			catch(e){}
+			return this;
+		};
+		
+		addIframeEvent = function(dom, eventname, handler)
+		{
+			dom.attachEvent('on' + eventname, handler);
+			return this;
+		};
+		
+		removeIframeEvent = function(dom, eventname, handler)
+		{
+			dom.detachEvent('on' + eventname, handler);
+			return this;
+		};
+		
+		fireEvent = function(dom, eventname)
+		{
+			dom.fireEvent('on' + eventname);
+			return this;
+		};
+	}
+	else
+	{
+		addEvent=function(oElement,sType,fHandler)
+		{
+			oElement.addEventListener(sType,fHandler,false);
+			return this;
+		};
+		
+		removeEvent=function(oElement,sType,fHandler)
+		{
+			oElement.removeEventListener(sType,fHandler,false);
+			return this;
+		};
+		
+		fireEvent = function(dom, eventname)
+		{
+          	var evt = document.createEvent('HTMLEvents');
+			evt.initEvent(eventname, true, true);
+			dom.dispatchEvent(evt);		
+			return this;
+		};
+		
+		addIframeEvent = addEvent;
+		
+		removeIframeEvent = removeEvent;
+	}
+	
+	function handleEvent()
+	{
+		var returnValue=true,event=oEvent(window.event);
+		var oHandler=this.events[event.type];
+		for(var o in oHandler)
+		{
+			if(oHandler[o](event)===false) returnValue=false;
+		}
+		
+		return returnValue;
+	}
+
+	lamb.event = {build:oEvent,addEvent:addEvent,removeEvent:removeEvent, addIframeEvent : addIframeEvent, removeIframeEvent : removeIframeEvent, fireEvent : fireEvent};	
+})();
+
+/**
+ * @class lamb.dom
+ */
+(function(){
+	lamb.dom = lamb.dom || {};
+	var dom = lamb.dom = 
+	{
+		/**
+		 * 创建dom对象方法
+		 * @param string tagname 标签名
+		 * @param json property 属性对象
+		 * @return dom
+		 */
+		create : function(tagname, property)
+		{
+			var dom ;
+			property = property || {};
+			dom = D.createElement(tagname);
+			
+			for (var k in property) {
+				if (property.hasOwnProperty(k)) {
+					if (k.indexOf('-') > -1) {
+						dom.setAttribute(k, property[k]);
+					} else {
+						dom[k] = property[k];
+					}
+				}
+			}
+			
+			$F.extend(dom, domExtendObject, true);
+			return dom;
+		},
+		/**
+		 * dom的根节点
+		 */
+		doc : function(){return document.compatMode=='CSS1Compat'?document.documentElement:document.body},
+		
+		/**
+		 * 获取页面的长度
+		 */
+		getPageHeight : function() 
+		{
+			return Math.max(document.body.scrollHeight, document.body.offsetHeight);
+		},
+		
+		/**
+		 * 获取页面的宽度
+		 * */
+		getPageWidth : function()
+		{
+			return Math.max(document.body.srcollWidth, document.body.offsetWidth);
+		},
+				
+		/**
+		 * 获取可视区域的宽度
+		 */
+		getClientWidth : function()
+		{
+			return document.documentElement.clientWidth;
+		},
+		
+		/**
+		 * 获取可视区域的高度
+		 */
+		 getClientHeight : function()
+		 {
+			return document.documentElement.clientHeight;
+		 },
+		
+		getScrollTop : function(domNode)
+		{
+			var doc = domNode ? domNode.ownerDocument : document;
+			return Math.max(doc.documentElement.scrollTop, doc.body.scrollTop);
+		},
+		
+		getScrollLeft : function(domNode)
+		{
+			var doc = domNode ? domNode.ownerDocument: document;
+			return Math.max(doc.documentElement.scrollLeft, doc.body.scrollLeft)			
+		},
+		
+		/**
+		 * 判断是否为框架的dom对象，如果不是且extend为true，则会自动扩展成框架的dom对象
+		 *
+		 * @param HTMLElement dom
+		 * @param boolean extend
+		 * @return boolean
+		 */
+		isOwnerDom : function(dom, extend /*=true*/)
+		{
+			var ret = dom.__lamb_dom_flag__ == 1;
+			extend = !!extend;
+			
+			if (!ret && extend) {
+				$F.extend(dom, domExtendObject, true);
+			}
+			return ret;
+		},
+		
+		/**
+		 * 获取元素的子节点不包括空白字符，兼容fixfox
+		 * @param {dom} domNode要获取的dom元素对象
+		 * @return {domArray}子节点集合
+		 */
+		getChildNodes : function(domNode)
+		{
+			var nodes	=	[],
+				childs	,
+				i		=	0,
+				j;
+			childs		=	domNode.childNodes;
+			for(j=childs.length;i<j;i++){
+				if(childs[i].nodeName=='#text') continue;
+				nodes.push(childs[i]);
+			}
+			return nodes;			
+		},
+		
+		/**
+		 * 获取domNode元素的各方位距页面的尺寸距离
+		 */
+		pageRect : function(domNode)
+		{
+			var left = 0,
+				top = 0,
+				right = 0,
+				bottom = 0;
+			if (!domNode.getBoundingClientRect) {
+				var n = domNode;
+				while (n) {
+					left += n.offsetLeft,
+					top += n.offsetTop;
+					n = n.offsetParent;
+				}
+				right = left + domNode.offsetWidth;
+				bottom = top + domNode.offsetHeight;
+			} else {
+				var rect = domNode.getBoundingClientRect();
+				left = right = dom.getScrollLeft(domNode);
+				top = bottom = dom.getScrollTop(domNode);
+				left += rect.left;
+				right += rect.right;
+				top += rect.top;
+				bottom += rect.bottom;
+			}
+			return {
+				"left": left,
+				"top": top,
+				"right": right,
+				"bottom": bottom
+			};			
+		},
+		
+		/**
+		 * 获取domNode距可视区域的各方位的尺寸距离
+		 */
+		clientRect : function(domNode)
+		{
+			var rect = dom.pageRect(domNode),
+				sLeft = dom.getScrollLeft(domNode),
+				sTop = dom.getScrollTop(domNode);
+			rect.left -= sLeft;
+			rect.right -= sLeft;
+			rect.top -= sTop;
+			rect.bottom -= sTop;
+			return rect;			
+		},
+		
+		/**
+		 * 为domNode增加css样式
+		 */
+		addClass : function(domNode, css)
+		{
+			var c = domNode.className + '';
+			if (c.indexOf(css) < 0 ) {
+				domNode.className = (c ? lamb.utils.trim(c) + ' ' : '') + css;
+			}
+			return this;
+		},
+		
+		/**
+		 * 为domNode移除css样式
+		 */
+		removeClass : function(domNode, css)
+		{
+			var c	=	domNode.className;
+			domNode.className = c==css?'' : lamb.utils.replaceEx(c, css, '');
+			return this;
+		},
+		
+		/**
+		 * 为domNode增加style样式
+		 */
+		style : function(domNode, oCss)
+		{
+			for(var k in oCss)
+				domNode.style[k] = oCss[k];	
+			return this;
+		}
+	};
+	
+	if (lamb.browser.ie) {
+		dom.contains	=	function(s,t){
+			return s!=t && s.contains(t);
+		};
+		
+		dom.setFilter	=	function(node,v){
+			node.style.filter	=	'alpha(opacity='+v+')';	
+		};
+		
+		dom.createWithName = function(name, type, isClose)
+		{
+			type = type || 'input';
+			isClose = !!isClose;
+			if (type == 'input') {
+				return document.createElement('<input name="' + name + '">');
+			} else {
+				if (isClose) {
+					return document.createElement('<' + type + ' name="' + name + '"/>');
+				} else {
+					return document.createElement('<' + type + ' name="' + name + '"></' + type + '>');
+				}
+			}
+			
+		};
+	}
+	else {
+		dom.contains	=	function(s,t){
+			return !! (s.compareDocumentPosition(t) & 16);
+		};
+		
+		dom.setFilter	=	function(node,v){
+			node.style.opacity	=	v/100;
+		};
+		
+		dom.createWithName = function(name, type)
+		{
+			var ret;
+			type = type || 'input';
+			ret = document.createElement(type);
+			ret.name = name;
+			return ret;
+		};		
+	}
+	
+})();
+
+/**
+ * @class lamb.ready
+ */
+(function(){
+	var _isReady = false,
+		_aReadyFnCache = [],
+		_isReadyBound = false,
+		_timer = null,
+		_ready, _bindReady, ready;
+	_ready = function()
+	{
+		var it,
+			i,
+			j;
+		if(_timer){
+			clearInterval(_timer);
+			_timer = null;
+		}
+		if(_isReady) {return ;}
+		_isReady		=	true;
+		for(i=0,j=_aReadyFnCache.length;i<j;i++) {
+			_aReadyFnCache[i]();
+		}
+		_aReadyFnCache=	[];
+	};
+	_bindReady = function()
+	{
+		if(_isReadyBound) {return ;}
+		_isReadyBound	=	true;
+		if(document.addEventListener){
+			document.addEventListener("DOMContentLoaded", _ready, false);	
+		}else if (document.attachEvent){
+			document.attachEvent("onreadystatechange", function(){
+				if((/loaded|complete/).test(document.readyState)) { _ready();}
+			});
+			//if(window == window.top){
+				_timer = setInterval(function(){
+					try{
+						_isReady || document.documentElement.doScroll('left');
+					}catch(e){return ;}
+					_ready();
+				},5);
+	/*		}else{
+				console.info('load');
+				lamb.event.addEvent(window, 'load', _ready);
+			}*/
+		}
+	};
+	ready = function(fn)
+	{
+		_bindReady();
+		_isReady?fn.call():_aReadyFnCache.push(fn);
+	};
+	lamb.ready = ready;
+})();
+
+/**
+ * @class lamb.ajax
+ */
+
+lamb.ajax = function(option)
+{
+	var _option,
+		request,
+		headers,
+		k, f;
+	_option = {
+		'url'		:	'',
+		'type'		:	'GET',
+		'dataType'	:	'text',
+		'error'		:	function(){},
+		'success'	:	function(){},
+		'async'		:	true,//默认异步
+		'params'	:	{},
+		'headers'	:	{},
+		'load'		:	function(){}
+	};
+	f = function()
+	{
+		var result;
+		if(request.readyState==4)
+		{
+			if(request.status==200)
+			{
+				(_option.success)(_option.dataType=='text'?request.responseText:request.responseXml);
+				return true;
+			}
+			else
+			{
+				(_option.error)(request.status);
+				return false;
+			}
+		}
+		(_option.load)(request.readyState);
+	};
+	
+	lamb.utils.extend(_option, option);
+	request = window.ActiveXObject ? new window.ActiveXObject('Microsoft.XMLHTTP') : new window.XMLHttpRequest();
+	request.onreadystatechange = f;
+	request.open(_option.type,_option.url,_option.async);
+	headers = _option.headers;
+	for(k in headers) {
+		if(headers.hasOwnProperty(k)) {
+			request.setRequestHeader(headers[k]['name'],headers[k]['value']);
+		}
+	}
+	request.setRequestHeader("Custom_Agent", 'Lamb-Ajax');
+	
+	if(_option.type=='GET') {
+		request.send(null);
+	}
+	else {
+		request.setRequestHeader("Content-Type","application/x-www-form-urlencoded");
+		var param = [];
+		for (var k in _option.params) {
+			if (_option.params.hasOwnProperty(k)) {
+				param.push(k + '=' + encodeURIComponent(_option.params[k]));
+			}
+		}
+		request.send(param.join('&'));
+	}
+	
+	if(!_option.async && lamb.browser.gecko) {request.onreadystatechange = f};
+};
+
+/**
+ * @object remoteAjax
+ */
+lamb.remoteAjax = {
+
+	'_frames' : [],
+	
+	'_forms' : [],
+	
+	/** 
+	 * @param object option
+	 * @return lamb.remoteAjax
+	 */
+	'get' : function(option) 
+	{
+		var opt = {
+			'url' : '',
+			'error' : function(){},
+			'success' : function(){},
+			'timeout' : 20,
+			'frame_opt' : 0, //0 - optimize 1- new other-id
+			'domain' : '',
+			'need_ret' : 1
+		}, timer = null, _frame, that = this;
+		$F.extend(opt, option);
+		if (opt.domain) {
+			document.domain = opt.domain;
+		}
+		_frame = this.getElement(1, opt.frame_opt);
+		_frame.isWorking = 1;
+		_frame._loadhandler && lamb.event.removeIframeEvent(_frame, 'load', _frame._loadhandler);
+		_frame._loadhandler = (function(_frame, opt, timer)
+		{
+			return function()
+			{
+				timer && clearTimeout(timer);
+				if (_frame.isWorking) {
+					_frame.isWorking = 0;
+					if (opt.need_ret) {
+						var doc = _frame.contentDocument || _frame.contentWindow.document;
+						opt.success(that.replaceDomainScript(doc.body.innerHTML));
+					} else {
+						opt.success();
+					}
+				}
+			};
+		})(_frame, opt, timer);
+		lamb.event.addIframeEvent(_frame, 'load', _frame._loadhandler);
+		_frame.src = opt.url;
+		if (opt.timeout > 0) {
+			timer = setTimeout((function(_frame, opt){
+					return function()
+					{
+						_frame.isWorking = 0;
+						opt.error();
+					}
+					})(_frame, opt), opt.timeout * 1000);
+		}
+		return this;
+	},
+	
+	/**
+	 * @param object option
+	 * @return lamb.remoteAjax
+	 */
+	'post' : function(option) 
+	{
+		var opt = {
+			'url' : '',
+			'params' : {},
+			'error' : function(){},
+			'success' : '',
+			'timeout' : 20,
+			'frame_opt' : 0,
+			'form_opt' : 0,
+			'domain' : '',
+			'need_ret' : 1
+		}, form, _frame, timer = null, that = this;
+		$F.extend(opt, option);
+		if (opt.domain) {
+			document.domain = opt.domain;
+		}		
+		form = this.getElement(2, opt.form_opt);
+		_frame = this.getElement(1, opt.frame_opt);
+		_frame.isWorking = 1;
+		form.innerHTML = '';
+		for (var key in opt.params) {
+			if (!key) {
+				continue;
+			}
+			var input = document.createElement('input');
+			with(input) {
+				type = 'hidden';
+				name = key;
+				value = opt.params[key];	
+			}
+			form.appendChild(input);
+		}
+		form.target = _frame.name;
+		form.action = opt.url;
+		_frame._loadhandler && lamb.event.removeIframeEvent(_frame, 'load', _frame._loadhandler);
+		_frame._loadhandler = (function(_frame, opt)
+		{
+			return function()
+			{
+				timer && clearTimeout(timer);
+				if (_frame.isWorking) {
+					_frame.isWorking = 0;
+					if (opt.need_ret) {
+						var doc = _frame.contentDocument || _frame.contentWindow.document;
+						opt.success(that.replaceDomainScript(doc.body.innerHTML));
+					} else {
+						opt.success();
+					}
+				}
+			};
+		})(_frame, opt);
+		lamb.event.addIframeEvent(_frame, 'load', _frame._loadhandler);
+		form.submit();
+		if (opt.timeout > 0) {
+			timer = setTimeout((function(_frame, opt){
+					return function()
+					{
+						_frame.isWorking = 0;
+						opt.error();
+					}
+					})(_frame, opt), opt.timeout * 1000);
+		}		
+	},
+	
+	/**
+	 * @param int type 1 - frame 2 - form
+	 * @param int | string | dom option 0 - optimize 1 - new  string - id dom - frameDom
+	 */
+	'getElement' : function(type, option) 
+	{
+		var ret = null,
+			caches = this._frames, tagname = 'iframe';
+		if (type == 2) {
+			caches = this._forms;
+			tagname = 'form';
+		} 
+		switch (typeof option) {
+			case 'number':
+				{
+					//get cache frames
+					if (option == 0) {
+						for (var i = 0, j = caches.length; i < j; i ++) {
+							if (!caches[i].isWorking) {
+								ret = caches[i];
+								break;
+							} 
+						}
+						if (ret) {
+							break;
+						}
+					}
+					//create new iframe	
+					var name = this.getUniqueName();
+					ret = lamb.dom.createWithName(name, tagname);
+					if (type == 2) {
+						with (ret) {
+							method = 'post';
+							style.width = '0px';
+							style.height = '0px';
+							style.overflow = 'hidden';
+							id = name;
+						}
+					} else {
+						with(ret) {
+							width = 0;
+							height = 0;
+							frameBorder = 0;
+							scrolling = 'no';						
+							id = name;
+						}
+					}
+					document.body.appendChild(ret);
+					caches.push(ret);
+				}
+				break;
+			case 'string':
+				ret = $A(option);
+				break;
+			case 'object':
+				ret = option;
+		}
+		if (!ret.id) {
+			ret.id = this.getUniqueName();
+		}
+		if (!ret.name) {
+			ret.name = ret.id;
+		}
+		return ret;
+	},
+	
+	'clearCacheElements' : function(type)
+	{
+		type == 2 ? (this._forms = []) : (this._frames = []);
+		return this;
+	},
+	
+	'getUniqueName' : function()
+	{
+		return '__iframe__name_' + new Date().valueOf() + Math.random();
+	},
+	
+	'replaceDomainScript' : function(s)
+	{
+		return s.replace(/^<script>document\.domain.*?<\/script>/i, '');
+	}
+};
+
+/**
+ * @object lamb.json
+ */
+lamb.json = {};
+(function(){
+	function f(n) {
+        return n < 10 ? '0' + n: n
+    }
+    if (typeof Date.prototype.toJSON !== 'function') {
+        Date.prototype.toJSON = function(key) {
+            return isFinite(this.valueOf()) ? this.getUTCFullYear() + '-' + f(this.getUTCMonth() + 1) + '-' + f(this.getUTCDate()) + 'T' + f(this.getUTCHours()) + ':' + f(this.getUTCMinutes()) + ':' + f(this.getUTCSeconds()) + 'Z': null
+        };
+        String.prototype.toJSON = Number.prototype.toJSON = Boolean.prototype.toJSON = function(key) {
+            return this.valueOf()
+        }
+    }
+	var cx = /[\u0000\u00ad\u0600-\u0604\u070f\u17b4\u17b5\u200c-\u200f\u2028-\u202f\u2060-\u206f\ufeff\ufff0-\uffff]/g,
+    escapable = /[\\\"\x00-\x1f\x7f-\x9f\u00ad\u0600-\u0604\u070f\u17b4\u17b5\u200c-\u200f\u2028-\u202f\u2060-\u206f\ufeff\ufff0-\uffff]/g,
+    gap,
+    indent,
+    meta = {
+        '\b': '\\b',
+        '\t': '\\t',
+        '\n': '\\n',
+        '\f': '\\f',
+        '\r': '\\r',
+        '"': '\\"',
+        '\\': '\\\\'
+    },
+    rep;
+	function quote(string) {
+        escapable.lastIndex = 0;
+        return escapable.test(string) ? '"' + string.replace(escapable, 
+        function(a) {
+            var c = meta[a];
+            return typeof c === 'string' ? c: '\\u' + ('0000' + a.charCodeAt(0).toString(16)).slice( - 4)
+        }) + '"': '"' + string + '"'
+    }
+	function str(key, holder) {
+        var i,
+        k,
+        v,
+        length,
+        mind = gap,
+        partial,
+        value = holder[key];
+        if (value && typeof value === 'object' && typeof value.toJSON === 'function') {
+            value = value.toJSON(key)
+        }
+        if (typeof rep === 'function') {
+            value = rep.call(holder, key, value)
+        }
+        switch (typeof value) {
+        case 'string':
+            return quote(value);
+        case 'number':
+            return isFinite(value) ? String(value) : 'null';
+        case 'boolean':
+        case 'null':
+            return String(value);
+        case 'object':
+            if (!value) {
+                return 'null'
+            }
+            gap += indent;
+            partial = [];
+            if (Object.prototype.toString.apply(value) === '[object Array]') {
+                length = value.length;
+                for (i = 0; i < length; i += 1) {
+                    partial[i] = str(i, value) || 'null'
+                }
+                v = partial.length === 0 ? '[]': gap ? '[\n' + gap + partial.join(',\n' + gap) + '\n' + mind + ']': '[' + partial.join(',') + ']';
+                gap = mind;
+                return v
+            }
+            if (rep && typeof rep === 'object') {
+                length = rep.length;
+                for (i = 0; i < length; i += 1) {
+                    k = rep[i];
+                    if (typeof k === 'string') {
+                        v = str(k, value);
+                        if (v) {
+                            partial.push(quote(k) + (gap ? ': ': ':') + v)
+                        }
+                    }
+                }
+            } else {
+                for (k in value) {
+                    if (Object.hasOwnProperty.call(value, k)) {
+                        v = str(k, value);
+                        if (v) {
+                            partial.push(quote(k) + (gap ? ': ': ':') + v)
+                        }
+                    }
+                }
+            }
+            v = partial.length === 0 ? '{}': gap ? '{\n' + gap + partial.join(',\n' + gap) + '\n' + mind + '}': '{' + partial.join(',') + '}';
+            gap = mind;
+            return v
+        }
+    }
+	if (typeof lamb.json.stringify !== 'function') {
+        lamb.json.stringify = function(value, replacer, space) {
+            var i;
+            gap = '';
+            indent = '';
+            if (typeof space === 'number') {
+                for (i = 0; i < space; i += 1) {
+                    indent += ' '
+                }
+            } else if (typeof space === 'string') {
+                indent = space
+            }
+            rep = replacer;
+            if (replacer && typeof replacer !== 'function' && (typeof replacer !== 'object' || typeof replacer.length !== 'number')) {
+                throw new Error('lamb.json.stringify')
+            }
+            return str('', {
+                '': value
+            })
+        }
+    }
+	if (typeof lamb.json.parse !== 'function') {
+        lamb.json.parse = function(text, reviver) {
+            var j;
+            function walk(holder, key) {
+                var k,
+                v,
+                value = holder[key];
+                if (value && typeof value === 'object') {
+                    for (k in value) {
+                        if (Object.hasOwnProperty.call(value, k)) {
+                            v = walk(value, k);
+                            if (v !== undefined) {
+                                value[k] = v
+                            } else {
+                                delete value[k]
+                            }
+                        }
+                    }
+                }
+                return reviver.call(holder, key, value)
+            }
+            text = String(text);
+            cx.lastIndex = 0;
+            if (cx.test(text)) {
+                text = text.replace(cx, 
+                function(a) {
+                    return '\\u' + ('0000' + a.charCodeAt(0).toString(16)).slice( - 4)
+                })
+            }
+            if (/^[\],:{}\s]*$/.test(text.replace(/\\(?:["\\\/bfnrt]|u[0-9a-fA-F]{4})/g, '@').replace(/"[^"\\\n\r]*"|true|false|null|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?/g, ']').replace(/(?:^|:|,)(?:\s*\[)+/g, ''))) {
+                j = eval('(' + text + ')');
+                return typeof reviver === 'function' ? walk({
+                    '': j
+                },
+                '') : j
+            }
+            throw new SyntaxError('lamb.json.parse')
+        }
+    }	
+})();
+
+/**
+ * init
+ */
+(function(){
+	window.$A || (window.$A = L);
+	window.$C || (window.$C = lamb.cookie);
+	window.$D || (window.$D = lamb.dom);
+	window.$E || (window.$E = lamb.event);
+	window.$F || (window.$F = lamb.utils);
+})();

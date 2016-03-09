@@ -1,0 +1,190 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"> 
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<script src="lamb.js"></script>
+<title>anchor</title>
+<style> 
+*{margin:0;padding:0;}
+body {
+	background-color: #FFFFFF;
+	cursor:default;
+	font-size:12px;
+	font-family:"Microsoft YaHei",Tahoma;
+}
+.clear{zoom:1}
+.clear:after{
+	display:block;
+	height:0px;
+	visibility:hidden;
+	clear:both;
+	content:"";
+}
+a {
+	color:#777;
+	text-decoration:none;
+}
+span, b{
+	color: #666666;
+}
+img {
+	border:none;
+}
+ul li {
+	list-style:none;
+}
+
+#main{
+	width:100%;
+}
+
+#main .main_nav{
+	position: fixed;
+	z-index: 1;
+	left: 20px;
+	top: 45px;
+	width: 130px;
+	background: #fff;
+	height: 70%;
+	OVERFLOW-Y: auto;
+	OVERFLOW-X: hidden;
+}
+
+#main .main_nav li{
+	height:30px;
+	line-height:35px;
+	text-align:center;
+	font-size:14px;
+	font-weight:700;
+}
+
+#main .main_nav li:hover{
+	background: #f4f4f4;
+	color: #333;
+}
+
+#main .main_content{
+	z-index: 0;
+	width: 80%;
+	text-align:center;
+	line-height:300px;
+	position: relative;
+	padding-left: 200px;
+}
+
+#main .main_content #f1{
+	height:700px;
+	background:#ccc;
+}
+
+#main .main_content #f2{
+	height:650px;
+	background:#abc;
+}
+
+#main .main_content #f3{
+	height:500px;
+	background:#def;
+}
+
+#main .main_content #f4{
+	height:500px;
+	background:#eee;
+}
+
+#main .main_content #f5{
+	height:700px;
+	background:#bde;
+	margin-bottom:800px;
+}
+
+.curr{
+	background: #f4f4f4;
+	color: #333;
+}
+
+</style> 
+</head> 
+<body> 
+
+<div id="main">
+	<ul class="main_nav">
+		<li id="n1" class="curr"><a href="#f1">首页</a></li> 
+		<li id="n2"><a href="#f2">导航一</a></li> 
+		<li id="n3"><a href="#f3">导航二</a></li> 
+		<li id="n4"><a href="#f4">导航三</a></li> 
+		<li id="n5"><a href="#f5">导航四</a></li> 
+	</ul> 
+	
+	<div class="main_content"> 
+		<p id="f1">
+			首页content
+		</p>
+		<p id="f2">
+			导航一content
+		</p>
+		<p id="f3">
+			导航二content
+		</p>
+		<p id="f4">
+			导航三content
+		</p>
+		<p id="f5">
+			导航四content
+		</p>
+	</div>
+</div>
+
+</body> 
+<script>
+  
+	$A.ready(function(){
+		
+		$E.addEvent(window, 'scroll', function(e){
+			var top = $D.getScrollTop();
+			var arr = document.getElementsByTagName('ul')[0].getElementsByTagName("li");
+			
+			var clear  = function(){
+				$F.each(arr, function(item){
+					$D.removeClass(item, 'curr');
+				});
+			}
+			
+			var n = 0, domTemp;
+			$A('.main_nav li').each(function(domLi, index){
+				if(index == n){
+					domTemp = domLi;
+				}
+				domLi.on('click', function(){
+					if (domLi.hasClass('curr')) {
+						return ;
+					}
+					domTemp.removeClass('curr');
+					domLi.addClass('curr');
+					domTemp = domLi;
+				});
+			});		
+			
+			if(top < $A('#f1').offsetHeight){
+				clear();
+				$D.addClass($A('#n1'), 'curr');
+			}else if(top > $A('#f2').offsetTop && top < $A('#f3').offsetTop){
+				clear();
+				$D.addClass($A('#n2'), 'curr');
+			}else if(top > $A('#f3').offsetTop && top < $A('#f4').offsetTop){
+				clear();
+				$D.addClass($A('#n3'), 'curr');
+			}else if(top > $A('#f4').offsetTop && top < $A('#f5').offsetTop){
+				clear();
+				$D.addClass($A('#n4'), 'curr');
+			}else if(top > $A('#f5').offsetTop){
+				clear();
+				$D.addClass($A('#n5'), 'curr');
+			}
+			
+		});
+		
+	}); 
+		
+</script> 
+</html> 
